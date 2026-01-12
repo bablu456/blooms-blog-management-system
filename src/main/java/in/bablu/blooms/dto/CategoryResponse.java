@@ -1,5 +1,7 @@
 package in.bablu.blooms.dto;
 
+import java.util.List;
+
 // Ye wo packet hai jo Server se Client (UI) ke paas jayega.
 // Hum Model (Category) ko direct nahi bhejte, balki is wrapper me daal kar bhejte hain.
 public class CategoryResponse {
@@ -56,4 +58,5 @@ public class CategoryResponse {
     public void setcUrl(String cUrl) {
         this.cUrl = cUrl;
     }
+
 }
