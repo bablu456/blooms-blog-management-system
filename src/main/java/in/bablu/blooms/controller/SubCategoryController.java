@@ -73,4 +73,62 @@ public class SubCategoryController {
         return result;
     }
 
+    public SubCategoryResponse getSubCategory(String subCategoryId){
+        List<SubCategory> list = Database.getInstance().getSubCategoryList();
+
+        for(SubCategory sub : list){
+            if(sub.getId().equals(subCategoryId) && sub.isActive()){
+                return mapToResponse(sub);
+            }
+        }
+        return null;
+    }
+
+    public SubCategoryResponse updateSubCategory(SubCategoryRequest request){
+        if(request.getId() == null){
+            System.out.println("❌ Error: ID is required for update");
+            return null;
+        }
+        List<SubCategory> list = Database.getInstance().getSubCategoryList();
+        for(SubCategory sub : list){
+            if(sub.getId().equals(request.getId())){
+
+                // Hum sirf Name aur Desc update kar rahe hain
+                // (Parent Category change karna thoda complex hota hai, abhi avoid karte hain)
+                sub.setName(request.getName());
+                sub.setDescription(request.getDescription());
+
+                System.out.println("✅ SubCategory Updated: \" + sub.getName()");
+                return mapToResponse(sub);
+            }
+        }
+        System.out.println("❌ Error: SubCategory nahi mili update karne ke liye.");
+        return null;
+    }
+    // --- 5. DELETE (Soft Delete) ---
+    public boolean deleteSubCategory(String subCategoryId) {
+        List<SubCategory> list = Database.getInstance().getSubCategoryList();
+
+        for (SubCategory sub : list) {
+            if (sub.getId().equals(subCategoryId)) {
+                sub.setActive(false); // Soft delete (Batti bujha di)
+                System.out.println("🗑️ SubCategory Deleted (Soft): " + sub.getName());
+                return true;
+            }
+        }
+        System.out.println("❌ Error: Delete karne ke liye ID nahi mili.");
+        return false;
+    }
+
+    // --- HELPER METHOD (Code duplication bachane ke liye) ---
+    // Ye method Model ko Response DTO me convert karta hai
+    private SubCategoryResponse mapToResponse(SubCategory sub) {
+        return new SubCategoryResponse(
+                sub.getId(),
+                sub.getCategoryId(),
+                sub.getName(),
+                sub.getDescription()
+        );
+    }
+
 }
