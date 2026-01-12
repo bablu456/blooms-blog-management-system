@@ -12,6 +12,12 @@ public class CategoryRequest {
     public CategoryRequest(){
     }
 
+    public CategoryRequest( String title, String desc, String cUrl) {
+        this.title = title;
+        this.desc = desc;
+        this.cUrl = cUrl;
+    }
+
     public String getId() {
         return id;
     }
