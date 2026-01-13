@@ -2,10 +2,8 @@ package in.bablu.blooms;
 
 import in.bablu.blooms.controller.CategoryController;
 import in.bablu.blooms.controller.SubCategoryController;
-import in.bablu.blooms.dto.CategoryRequest;
-import in.bablu.blooms.dto.CategoryResponse;
-import in.bablu.blooms.dto.SubCategoryRequest;
-import in.bablu.blooms.dto.SubCategoryResponse;
+import in.bablu.blooms.controller.UserController;
+import in.bablu.blooms.dto.*;
 
 import java.util.List;
 
@@ -55,29 +53,63 @@ public class UiClient {
         catController.createCategory(catReq);
         // NOTE: Real code mein hum createCategory se ID return karwate hain.
         // Lekin abhi hum assume karte hain ki list ki pehli category "Technology" hai.
-        String techId = catController.getCategories().get(0).getId();
-        System.out.println("Tech Category ID mil gayi: " + techId);
+//        String techId = catController.getCategories().get(0).getId();
+//        System.out.println("Tech Category ID mil gayi: " + techId);
+//
+//        SubCategoryController subController = new SubCategoryController();
+//        System.out.println("\n--- Creating SubCategories ---");
+//
+//        // Sahi ID ke saath (Ya Technology me jayega)
+//        SubCategoryRequest javaReq = new SubCategoryRequest(techId,"Java","Core Java");
+//        subController.createSubCategory(javaReq);
+//
+//        // Sahi ID ke saath (Ye bhi Technology me jayega)
+//        SubCategoryRequest pythonReq = new SubCategoryRequest(techId, "Python", "AI ML");
+//        subController.createSubCategory(pythonReq);
+//        // galat ID ke sath (Test Validation)
+//        SubCategoryRequest errorReq = new SubCategoryRequest("9999","Alien Tech","Sci-Fi Stuff");
+//        subController.createSubCategory(errorReq);
+//
+//        // 3. Ab Fetch karte hain(Filter Logic)
+//        System.out.println("\n--- Fetching SubCategories for Technology ---");
+//        List<SubCategoryResponse> techSub = subController.getSubCategoriesByCategoryId(techId);
+//
+//        for(SubCategoryResponse sub : techSub){
+//            System.out.println("Found: "+sub.getName());
+//        }
 
-        SubCategoryController subController = new SubCategoryController();
-        System.out.println("\n--- Creating SubCategories ---");
+        // ... (Category code upar rehne do) ...
 
-        // Sahi ID ke saath (Ya Technology me jayega)
-        SubCategoryRequest javaReq = new SubCategoryRequest(techId,"Java","Core Java");
-        subController.createSubCategory(javaReq);
+        System.out.println("\n--- TESTING USER MODULE ---");
+        UserController userController = new UserController();
 
-        // Sahi ID ke saath (Ye bhi Technology me jayega)
-        SubCategoryRequest pythonReq = new SubCategoryRequest(techId, "Python", "AI ML");
-        subController.createSubCategory(pythonReq);
-        // galat ID ke sath (Test Validation)
-        SubCategoryRequest errorReq = new SubCategoryRequest("9999","Alien Tech","Sci-Fi Stuff");
-        subController.createSubCategory(errorReq);
+        // 1. Register a New User
+        UserRequest user1 = new UserRequest(
+                "superadmin",
+                "admin@blooms.in",
+                "Super Admin",
+                "admin123", // Password
+                "avatar.png"
+        );
 
-        // 3. Ab Fetch karte hain(Filter Logic)
-        System.out.println("\n--- Fetching SubCategories for Technology ---");
-        List<SubCategoryResponse> techSub = subController.getSubCategoriesByCategoryId(techId);
+        String result = userController.registerUser(user1);
+        System.out.println(result);
 
-        for(SubCategoryResponse sub : techSub){
-            System.out.println("Found: "+sub.getName());
+        // 2. Try Registering duplicate (Validation Check)
+        String result2 = userController.registerUser(user1);
+        System.out.println("Duplicate Check: " + result2);
+
+        // 3. Login with WRONG password
+        System.out.println("\n--- Trying Wrong Login ---");
+        userController.loginUser("superadmin", "wrongpass");
+
+        // 4. Login with CORRECT password
+        System.out.println("\n--- Trying Correct Login ---");
+        UserResponse loggedInUser = userController.loginUser("superadmin", "admin123");
+
+        if(loggedInUser != null) {
+            System.out.println("Welcome Dashboard: " + loggedInUser.getName());
+            // NOTE: Future me hum is 'loggedInUser.getId()' ko use karenge Blog likhne ke liye
         }
     }
 }
