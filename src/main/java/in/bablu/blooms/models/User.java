@@ -1,6 +1,11 @@
 package in.bablu.blooms.models;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document(collection = "users")
 public class User {
+    @Id
     private String id; //1. Unique ID har user ke liye
     private String username; //2. Username login id jise daal kar wo login karega (Unique honi chahiye)
     private String email; //3. Contact Info
