@@ -4,16 +4,19 @@ import in.bablu.blooms.Database;
 import in.bablu.blooms.dto.UserRequest;
 import in.bablu.blooms.dto.UserResponse;
 import in.bablu.blooms.models.User;
+import org.springframework.web.bind.annotation.*;
 
 import javax.xml.crypto.Data;
+import java.util.ArrayList;
 import java.util.List;
 
+@RestController
+@RequestMapping("/api/user")
 public class UserController {
 
+    @PostMapping
     public String registerUser(UserRequest request){
         List<User> userList = Database.getInstance().getUserList();
-
-        //
 
         for(User user : userList){
             if(user.getUsername().equals(request.getUsername())){
@@ -36,6 +39,7 @@ public class UserController {
         return "✅ Success: User registered with ID: " + newUser.getId();
     }
 
+    @GetMapping("/login")
     public UserResponse loginUser(String username, String password){
         List<User> userList = Database.getInstance().getUserList();
 
@@ -50,6 +54,7 @@ public class UserController {
     }
 
     // --- 3. GET USER (Profile View) ---
+    @GetMapping("/userid")
     public UserResponse getUser(String userId){
         for(User user : Database.getInstance().getUserList()){
             if(user.getId().equals(userId)){
@@ -57,6 +62,21 @@ public class UserController {
             }
         }
         return null;
+    }
+
+    @GetMapping
+    public List<UserResponse> viewAll(){
+        List<User> userList = Database.getInstance().getUserList();
+        List<UserResponse> users = new ArrayList<>();
+        for(User user : userList){
+            UserResponse userResponse = new UserResponse();
+            userResponse.setEmail(user.getEmail());
+            userResponse.setName(user.getName());
+            userResponse.setUsername(user.getUsername());
+            userResponse.setProfileUrl(user.getProfileUrl());
+            users.add(userResponse);
+        }
+        return users;
     }
 
 }

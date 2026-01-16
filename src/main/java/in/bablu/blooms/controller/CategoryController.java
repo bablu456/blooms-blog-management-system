@@ -5,14 +5,19 @@ import in.bablu.blooms.dto.CategoryRequest;
 import in.bablu.blooms.dto.CategoryResponse;
 import in.bablu.blooms.models.Category;
 import in.bablu.blooms.models.Status;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@RestController
+@RequestMapping("/api/category")
 public class CategoryController {
     //---1. Create Category---
-    public void createCategory(CategoryRequest categoryRequest){
+
+    @PostMapping
+    public void createCategory(@RequestBody CategoryRequest categoryRequest){
         // Logic to create a new category using data from categoryRequest
         Category category = new Category();
 
@@ -40,6 +45,7 @@ public class CategoryController {
     }
 
     //---2. Read Single (Ek Item dhundhna)---
+    @GetMapping
     public CategoryResponse getCategory(String categoryId){
         //Database se Puri list nikali
         List<Category> categoryList = Database.getInstance().getCategoryList();
@@ -60,6 +66,7 @@ public class CategoryController {
         return null; // agar Id nahi mili
     }
     // --- 3. READ ALL (Sab kuch dikhana) ---
+    @GetMapping("/all")
     public List<CategoryResponse> getCategories(){
         List<Category> categoryList = Database.getInstance().getCategoryList();
         List<CategoryResponse> categoryResponses = new ArrayList<>();
@@ -79,6 +86,7 @@ public class CategoryController {
         return categoryResponses;
     }
     // --- 4. DELETE (Soft Delete) ---
+    @DeleteMapping
     public boolean deleteCategory(String categoryId){
         List<Category> categoryList = Database.getInstance().getCategoryList();
 
@@ -96,7 +104,8 @@ public class CategoryController {
         return false; // agar Id nahi mili
     }
     // ---- 5 Update (Edit Karna) ----
-    public CategoryResponse updateCategory(CategoryRequest categoryRequest){
+    @PutMapping
+    public CategoryResponse updateCategory(@RequestBody CategoryRequest categoryRequest){
         CategoryResponse categoryResponse = new CategoryResponse();
 
         //Validation: Agar ID hi nhi hai to update kiska karain ?
