@@ -65,7 +65,7 @@ public class BlogController {
             blogResponse.setAuthorName(blog.getAuthorId());
             blogResponse.setTitle(blog.getTitle());
             blogResponse.setDescription(blog.getDescription());
-            blogResponse.setCategoryMappings(blog.getCategoryMappings());
+//            blogResponse.setCategoryMappings(blog.getCategoryMappings());
             blogResponse.setStatus(blog.getStatus());
             blogResponse.setCreatedTime(blog.getCreatedDTTM().toString());
 
