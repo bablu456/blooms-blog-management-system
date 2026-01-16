@@ -6,14 +6,22 @@ import in.bablu.blooms.dto.BlogResponse;
 import in.bablu.blooms.models.Blog;
 import in.bablu.blooms.models.Status;
 import in.bablu.blooms.models.User;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+@RestController
+@RequestMapping("/api/blog")
+
 public class BlogController {
     // --- 1. CREATE BLOG ---
+    @PostMapping
     public String createBlog(BlogRequest request) {
     // Validation: Author (User) exist karta hai ya nahi?
         boolean authorExists = false;
@@ -45,6 +53,7 @@ public class BlogController {
     }
 
     // --- 2. GET ALL BLOGS (Feed) ---
+    @GetMapping("/all")
     public List<BlogResponse> getAllBlogs(){
         List<Blog> blogs = Database.getInstance().getBlogList();
         List<BlogResponse> responseList = new ArrayList<>();
