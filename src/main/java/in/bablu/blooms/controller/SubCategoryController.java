@@ -6,15 +6,19 @@ import in.bablu.blooms.dto.SubCategoryResponse;
 import in.bablu.blooms.models.Category;
 import in.bablu.blooms.models.Status;
 import in.bablu.blooms.models.SubCategory;
+import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+@RestController
+@RequestMapping("/api/subcategory")
 public class SubCategoryController {
 
     //--- 1. Create subcategory ---
+    @PostMapping
     public void createSubCategory(SubCategoryRequest request){
         // Step A: Validation - Kya ya Baap (Category) exist karta hai?
         boolean categoryExists = false;
@@ -51,6 +55,7 @@ public class SubCategoryController {
         System.out.println("Controller: Sub-Category Created -> " + subCategory.getName());
     }
     // --- 2. Read By Category (Filter Karna)
+    @GetMapping
     // User bolega: "Is category id ka maal dikaho"
     public List<SubCategoryResponse> getSubCategoriesByCategoryId(String categoryId){
 
@@ -84,6 +89,7 @@ public class SubCategoryController {
         return null;
     }
 
+    @PutMapping
     public SubCategoryResponse updateSubCategory(SubCategoryRequest request){
         if(request.getId() == null){
             System.out.println("❌ Error: ID is required for update");
@@ -106,6 +112,7 @@ public class SubCategoryController {
         return null;
     }
     // --- 5. DELETE (Soft Delete) ---
+    @DeleteMapping
     public boolean deleteSubCategory(String subCategoryId) {
         List<SubCategory> list = Database.getInstance().getSubCategoryList();
 
@@ -129,6 +136,25 @@ public class SubCategoryController {
                 sub.getName(),
                 sub.getDescription()
         );
+    }
+
+
+    // Read All SubCategory
+    @GetMapping("/all")
+    public List<SubCategoryResponse> viewAll(){
+        List<SubCategory> subCategoryList = Database.getInstance().getSubCategoryList();
+        List<SubCategoryResponse> subCategories = new ArrayList<>();
+
+        for(SubCategory subCategory : subCategoryList){
+            SubCategoryResponse sub = new SubCategoryResponse();
+            sub.setDescription(subCategory.getDescription());
+            sub.setCategoryId(subCategory.getCategoryId());
+            sub.setId(subCategory.getId());
+            sub.setName(subCategory.getName());
+
+            subCategories.add(sub);
+        }
+        return subCategories;
     }
 
 }
