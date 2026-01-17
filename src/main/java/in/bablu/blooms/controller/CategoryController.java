@@ -5,6 +5,8 @@ import in.bablu.blooms.dto.CategoryRequest;
 import in.bablu.blooms.dto.CategoryResponse;
 import in.bablu.blooms.models.Category;
 import in.bablu.blooms.models.Status;
+import in.bablu.blooms.repositories.CategoryRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -14,17 +16,18 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/category")
 public class CategoryController {
-    //---1. Create Category---
+
+    @Autowired
+    public CategoryRepository categoryRepository;
 
     @PostMapping
-    public void createCategory(@RequestBody CategoryRequest categoryRequest){
-        // Logic to create a new category using data from categoryRequest
+    public  CategoryResponse createCategory(@RequestBody CategoryRequest request){
+        // Logic to create a new category using data from request
         Category category = new Category();
 
-        // Step B: Request (Lifafa) Se Data Nikal Kar Model Me Dala
-        category.setName(categoryRequest.getTitle());
-        category.setDescription(categoryRequest.getDesc());
-        category.setImageUrl(categoryRequest.getcUrl());
+        category.setName(request.getTitle());
+        category.setDescription(request.getDesc());
+        category.setImageUrl(request.getcUrl());
 
         // Step C: System Generated Data (jo User nahi deta)
         category.setStatus(Status.PUBLISHED.getDisplayName());
@@ -32,16 +35,15 @@ public class CategoryController {
         //Unique ID (Current tiem in miliseconds - Jugaad for unique ID)
         category.setId(String.valueOf(System.currentTimeMillis()));
 
+
         category.setCreatedBy("Admin");
         category.setActive(true);
         category.setCreatedDTTM(LocalDateTime.now()); // Abhi ka Time
 
         //Step D: Database (Fridge) me Save karna
         //Singelton Pattern ka use karke list mangwayi aur add kar diya
-        Database database = Database.getInstance();
-        database.getCategoryList().add(category);
-
-        System.out.println("Controller: Category Created -> " + category.getName());
+        Category savedCategory = categoryRepository.save(category);
+        return new CategoryResponse(savedCategory.getId(),savedCategory.getName(),savedCategory.getDescription(),savedCategory.getImageUrl());
     }
 
     //---2. Read Single (Ek Item dhundhna)---
@@ -68,69 +70,52 @@ public class CategoryController {
     // --- 3. READ ALL (Sab kuch dikhana) ---
     @GetMapping("/all")
     public List<CategoryResponse> getCategories(){
-        List<Category> categoryList = Database.getInstance().getCategoryList();
-        List<CategoryResponse> categoryResponses = new ArrayList<>();
+       List<Category> categories = categoryRepository.findAll();
 
-        for(Category category : categoryList){
-            if(category.isActive()){
-                //Mapping: Model -> Response
-                CategoryResponse categoryResponse = new CategoryResponse();
-                categoryResponse.setId(category.getId());
-                categoryResponse.setTitle(category.getName());
-                categoryResponse.setDesc(category.getDescription());
-                categoryResponse.setcUrl(category.getImageUrl());
+       List<CategoryResponse> responses = new ArrayList<>();
 
-                categoryResponses.add(categoryResponse);
-            }
-        }
-        return categoryResponses;
+       for(Category c : categories){
+           responses.add(new CategoryResponse(c.getId(),c.getName(),c.getDescription(),c.getImageUrl()));
+       }
+        return responses;
     }
     // --- 4. DELETE (Soft Delete) ---
-    @DeleteMapping
-    public boolean deleteCategory(String categoryId){
-        List<Category> categoryList = Database.getInstance().getCategoryList();
-
-        for(Category cat : categoryList){
-            if(cat.getId().equals(categoryId)){
-                // Hard Delete (Database se uda dena) - hum ye nhi karenge
-                //categoryList.remove(cat);
-
-                //soft Delete (sirf chhupa dena)
-                cat.setActive(false);
-                System.out.println("Controller: Category Deleted -> " + cat.getName());
-                return  true;
-            }
+    @DeleteMapping("/{id}")
+    public boolean deleteCategory(@PathVariable String id){
+        if(categoryRepository.existsById(id)){
+            categoryRepository.deleteById(id);
+            return true;
         }
         return false; // agar Id nahi mili
     }
     // ---- 5 Update (Edit Karna) ----
-    @PutMapping
-    public CategoryResponse updateCategory(@RequestBody CategoryRequest categoryRequest){
-        CategoryResponse categoryResponse = new CategoryResponse();
-
-        //Validation: Agar ID hi nhi hai to update kiska karain ?
-        if(categoryRequest.getId() == null){
-            return categoryResponse;
-        }
-        List<Category> categoryResponses = Database.getInstance().getCategoryList();
-
-        for(Category category : categoryResponses){
-            if(category.getId().equals(categoryRequest.getId())){
-                category.setName(categoryRequest.getTitle());
-                category.setDescription(categoryRequest.getDesc());
-                category.setImageUrl(categoryRequest.getcUrl());
-
-                //Response Ready kiya wapas bhejne ke liye
-                categoryResponse.setDesc(category.getDescription());
-                categoryResponse.setId(category.getId());
-                categoryResponse.setcUrl(category.getImageUrl());
-                categoryResponse.setTitle(category.getName());
-
-                System.out.println("Controller: Category Updated -> " + category.getName());
-                return categoryResponse;
-            }
-        }
-        return categoryResponse;
-    }
+//    @PutMapping
+//    public CategoryResponse updateCategory(@RequestBody CategoryRequest categoryRequest){
+//        CategoryResponse categoryResponse = new CategoryResponse();
+//
+//        //Validation: Agar ID hi nhi hai to update kiska karain ?
+//        if(categoryRequest.getId() == null){
+//            return categoryResponse;
+//        }
+//        List<Category> categoryResponses = Database.getInstance().getCategoryList();
+//
+//        for(Category category : categoryResponses){
+//            if(category.getId().equals(categoryRequest.getId())){
+//                category.setName(categoryRequest.getTitle());
+//                category.setDescription(categoryRequest.getDesc());
+//                category.setImageUrl(categoryRequest.getcUrl());
+//
+//                //Response Ready kiya wapas bhejne ke liye
+//                categoryResponse.setDesc(category.getDescription());
+//                categoryResponse.setId(category.getId());
+//                categoryResponse.setcUrl(category.getImageUrl());
+//                categoryResponse.setTitle(category.getName());
+//
+//                System.out.println("Controller: Category Updated -> " + category.getName());
+//                return categoryResponse;
+//            }
+//        }
+//        return categoryResponse;
+//    }
 
 }

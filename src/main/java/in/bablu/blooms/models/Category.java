@@ -1,9 +1,14 @@
 package in.bablu.blooms.models;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
+@Document(collection = "categories")
 public class Category {
 
     //1. Unique ID har category ke liye
+    @Id
     private String id;
 
     private String name; //2. Category ka naam (e.g., "Technology", "Health")
