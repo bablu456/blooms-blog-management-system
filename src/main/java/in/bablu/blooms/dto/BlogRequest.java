@@ -11,36 +11,18 @@ public class BlogRequest {
     private String description;
     private String content;
     private String authorId;
-    private String categoryId;
-    private String subCategoryId;
 
     private List<CategoryMapping>  categoryMappings;
 
     public BlogRequest() {}
 
-    public BlogRequest(String title, String description, String content, String authorId, String categoryId, String subCategoryId) {
+    public BlogRequest(String title, String description, String content, String authorId, String categoryId, String subCategoryId, List<CategoryMapping> categoryMappings){
         this.title = title;
         this.description = description;
         this.content = content;
         this.authorId = authorId;
-        this.categoryId = categoryId;
-        this.subCategoryId = subCategoryId;
-    }
+        this.categoryMappings = categoryMappings;
 
-    public String getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(String categoryId) {
-        this.categoryId = categoryId;
-    }
-
-    public String getSubCategoryId() {
-        return subCategoryId;
-    }
-
-    public void setSubCategoryId(String subCategoryId) {
-        this.subCategoryId = subCategoryId;
     }
 
     public String getId() { return id; }

@@ -17,6 +17,15 @@ public class BlogResponse {
 
     public BlogResponse() {}
 
+    public BlogResponse(String id, String title, String description, String content, String authorName, List<CategoryMapping> categoryMappings) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.content = content;
+        this.authorName = authorName;
+        this.categoryMappings = categoryMappings;
+    }
+
     // --- Getters & Setters ---
     // (Generate using IDE: Right Click -> Generate -> Getters and Setters)
     public String getId() { return id; }

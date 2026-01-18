@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Date;
 
 // Yeh class ek blueprint hai ki hamara Blog post kaisa dikhega
 @Document(collection = "blogs")
@@ -23,19 +24,19 @@ public class Blog {
 
     private String authorId;
 
-    private Timestamp createdDTTM;
+//    private Timestamp createdDTTM;
 
-    private long createdAt;
+    private Date createdAt;
 
 
 
     private List<CategoryMapping> categoryMappings;
 
-    public long getCreatedAt() {
+    public Date getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(long createdAt) {
+    public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
 
@@ -87,13 +88,13 @@ public class Blog {
         this.authorId = authorId;
     }
 
-    public Timestamp getCreatedDTTM() {
-        return createdDTTM;
-    }
-
-    public void setCreatedDTTM(Timestamp createdDTTM) {
-        this.createdDTTM = createdDTTM;
-    }
+//    public Timestamp getCreatedDTTM() {
+//        return createdDTTM;
+//    }
+//
+//    public void setCreatedDTTM(Timestamp createdDTTM) {
+//        this.createdDTTM = createdDTTM;
+//    }
 
     public List<CategoryMapping> getCategoryMappings(){
         return categoryMappings;
