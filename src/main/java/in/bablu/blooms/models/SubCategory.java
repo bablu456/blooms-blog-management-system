@@ -1,9 +1,14 @@
 package in.bablu.blooms.models;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.sql.Timestamp;
 
+@Document(collection = "subcategories")
 public class SubCategory {
     //1. Apni unique Pehchan (Unique ID)
+    @Id
     private String id;
 
     //2. Connection Line (Sabse Important)
