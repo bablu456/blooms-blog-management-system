@@ -1,27 +1,97 @@
 package in.bablu.blooms.controller;
 
-import in.bablu.blooms.Database;
 import in.bablu.blooms.dto.BlogRequest;
 import in.bablu.blooms.dto.BlogResponse;
 import in.bablu.blooms.models.Blog;
-import in.bablu.blooms.models.Status;
-import in.bablu.blooms.models.User;
-import in.bablu.blooms.repositories.BlogRepository;
+import in.bablu.blooms.services.BlogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/blog")
-
 public class BlogController {
 
+    @Autowired
+    private BlogService blogService;
 
+    @PostMapping
+    public BlogResponse createBlog(@RequestBody BlogRequest blogRequest){
+        Blog blog = new Blog();
+        blog.setId(blogRequest.getId());
+        blog.setContent(blogRequest.getContent());
+        blog.setDescription(blogRequest.getDescription());
+        blog.setAuthorId(blog.getAuthorId());
+        blog.setCategoryMappings(blogRequest.getCategoryMappings());
+
+        Blog savedBlog = blogService.createBlog(blog);
+
+        return mapToResponse(savedBlog);
+    }
+
+    @GetMapping
+    public List<BlogResponse> getAllBlogs(){
+        List<Blog> blogs = blogService.getAllBlogs();
+        List<BlogResponse> responses = new ArrayList<>();
+
+        for(Blog blog : blogs){
+            BlogResponse blogResponse = new BlogResponse();
+            blogResponse.setTitle(blog.getTitle());
+            blogResponse.setContent(blog.getContent());
+            blogResponse.setAuthorName(blog.getAuthorId());
+            blogResponse.setDescription(blog.getDescription());
+
+            responses.add(blogResponse);
+        }
+        return responses;
+    }
+
+    @GetMapping("/{id}")
+    public BlogResponse getBlogById(@PathVariable String id){
+        Blog blog = blogService.getBlogById(id).orElse(null);
+        if(blog!=null){
+            return mapToResponse(blog);
+        }
+        return null;
+    }
+
+    @GetMapping("/author/{authorId}")
+    public List<BlogResponse> getBlogByAuthor(@PathVariable String authorId){
+        List<Blog> blogs = blogService.getBlogsByAuthor(authorId);
+
+        List<BlogResponse> blogResponses = new ArrayList<>();
+
+        for(Blog b : blogs){
+            BlogResponse blogResponse = new BlogResponse();
+            blogResponse.setDescription(b.getDescription());
+            blogResponse.setId(b.getId());
+            blogResponse.setAuthorName(b.getAuthorId());
+            blogResponse.setAuthorName(b.getAuthorId());
+            blogResponse.setContent(b.getContent());
+
+            blogResponses.add(blogResponse);
+        }
+        return blogResponses;
+     }
+
+     @DeleteMapping("/{id}")
+    public boolean deleteBlog(@PathVariable String id){
+       return blogService.deleteBlog(id);
+     }
+
+     private BlogResponse mapToResponse(Blog blog){
+        return new BlogResponse(
+                blog.getId(),
+                blog.getTitle(),
+                blog.getDescription(),
+                blog.getContent(),
+                blog.getAuthorId(),
+                blog.getCategoryMappings()
+        );
+     }
 
 
 

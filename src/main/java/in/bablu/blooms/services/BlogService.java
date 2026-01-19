@@ -18,20 +18,20 @@ public class BlogService {
     @Autowired
     private BlogRepository blogRepository;
 
-    private Blog createBlog(Blog request){
+    public Blog createBlog(Blog request){
         request.setCreatedAt(new Date());
         return blogRepository.save(request);
     }
 
-    private Optional<Blog> getBlogById(String id){
+    public Optional<Blog> getBlogById(String id){
         return blogRepository.findById(id);
     }
 
-    private List<Blog> getAllBlogs(){
+    public List<Blog> getAllBlogs(){
         return blogRepository.findAll();
     }
 
-    private boolean deleteBlog(String id){
+    public boolean deleteBlog(String id){
         if(blogRepository.existsById(id)){
             blogRepository.deleteById(id);
             return true;
@@ -42,5 +42,6 @@ public class BlogService {
     public List<Blog> getBlogsByAuthor(String authorId){
         return blogRepository.findByAuthorId(authorId);
     }
+
 
 }
