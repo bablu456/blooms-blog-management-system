@@ -4,6 +4,7 @@ import in.bablu.blooms.dto.UserRequest;
 import in.bablu.blooms.dto.UserResponse;
 import in.bablu.blooms.models.User;
 import in.bablu.blooms.repositories.UserRepository;
+import in.bablu.blooms.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,52 +15,88 @@ import java.util.List;
 public class UserController {
 
     @Autowired   // Springboot khud repository ka object bana ke yahan dega
-    private UserRepository userRepository;
+    private UserService userService;
 
     @PostMapping("/register")
-    public String registerUser(UserRequest request){
-
-        if(userRepository.findByUsername(request.getUsername()).isPresent()) {
-            return " Error : Username alredy Exists!";
-        }
-        if(userRepository.findByEmail(request.getEmail()).isPresent()){
-            return " Error : Email alredy exists!";
-        }
+    public String registerUser(@RequestBody UserRequest request){
 
         User newUser = new User();
-        newUser.setId(String.valueOf(System.currentTimeMillis()));
+        newUser.setUsername(request.getUsername());
+        newUser.setPassword(request.getPassword());
         newUser.setUsername(request.getUsername());
         newUser.setEmail(request.getEmail());
-        newUser.setName(request.getName());
         newUser.setProfileUrl(request.getProfileUrl());
 
-        newUser.setPassword(request.getPassword());
-
-        User savedUser = userRepository.save(newUser);
-
-        return "✅ Success: User registered with ID: " + newUser.getId();
+        return userService.registerUser(newUser);
     }
 
+    // Login
     @PostMapping("/login")
     public UserResponse loginUser(@RequestBody UserRequest loginRequest){
+        User user = userService.loginUser(loginRequest.getUsername(), loginRequest.getPassword());
 
-        User user = userRepository.findByUsername(loginRequest.getUsername()).orElse(null);
-
-        if(user !=null && user.getPassword().equals(loginRequest.getPassword())){
-            return new UserResponse(user.getId(),user.getUsername(),user.getEmail(),user.getName(),user.getProfileUrl());
+        if(user!=null){
+            UserResponse userResponse = new UserResponse();
+            userResponse.setId(user.getId());
+            userResponse.setName(user.getName());
+            userResponse.setEmail(user.getEmail());
+            userResponse.setProfileUrl(user.getProfileUrl());
+            userResponse.setUsername(user.getUsername());
+            return userResponse;
         }
-
-        System.out.println("❌ Login Failed: Invalid Credentials");
         return null;
     }
 
-    // UserController.java ke andar
-
-    // --- 4. GET ALL USERS (Testing ke liye) ---
-    @GetMapping // URL: GET /users
-    public List<User> getAllUsers() {
-        return userRepository.findAll(); // Ye seedha MongoDB se data layega
+    @GetMapping
+    public List<User> getAllUsers(){
+        return userService.getAll();
     }
+
+
+//    @PostMapping("/register")
+//    public String registerUser(UserRequest request){
+//
+//        if(userRepository.findByUsername(request.getUsername()).isPresent()) {
+//            return " Error : Username alredy Exists!";
+//        }
+//        if(userRepository.findByEmail(request.getEmail()).isPresent()){
+//            return " Error : Email alredy exists!";
+//        }
+//
+//        User newUser = new User();
+//        newUser.setId(String.valueOf(System.currentTimeMillis()));
+//        newUser.setUsername(request.getUsername());
+//        newUser.setEmail(request.getEmail());
+//        newUser.setName(request.getName());
+//        newUser.setProfileUrl(request.getProfileUrl());
+//
+//        newUser.setPassword(request.getPassword());
+//
+//        User savedUser = userRepository.save(newUser);
+//
+//        return "✅ Success: User registered with ID: " + newUser.getId();
+//    }
+//
+//    @PostMapping("/login")
+//    public UserResponse loginUser(@RequestBody UserRequest loginRequest){
+//
+//        User user = userRepository.findByUsername(loginRequest.getUsername()).orElse(null);
+//
+//        if(user !=null && user.getPassword().equals(loginRequest.getPassword())){
+//            return new UserResponse(user.getId(),user.getUsername(),user.getEmail(),user.getName(),user.getProfileUrl());
+//        }
+//
+//        System.out.println("❌ Login Failed: Invalid Credentials");
+//        return null;
+//    }
+//
+//    // UserController.java ke andar
+//
+//    // --- 4. GET ALL USERS (Testing ke liye) ---
+//    @GetMapping // URL: GET /users
+//    public List<User> getAllUsers() {
+//        return userRepository.findAll(); // Ye seedha MongoDB se data layega
+//    }
 
 //    // --- 3. GET USER (Profile View) ---
 //    @GetMapping("/userid")
