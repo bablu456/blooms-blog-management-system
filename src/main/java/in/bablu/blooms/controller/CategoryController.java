@@ -1,17 +1,24 @@
 package in.bablu.blooms.controller;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import in.bablu.blooms.Database;
 import in.bablu.blooms.dto.CategoryRequest;
 import in.bablu.blooms.dto.CategoryResponse;
 import in.bablu.blooms.models.Category;
 import in.bablu.blooms.models.Status;
 import in.bablu.blooms.repositories.CategoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/category")
@@ -22,7 +29,7 @@ public class CategoryController {
 
     @PostMapping
     public  CategoryResponse createCategory(@RequestBody CategoryRequest request){
-        // Logic to create a new category using data from request
+        // Logic to create a new ca tegory using data from request
         Category category = new Category();
 
         category.setName(request.getTitle());

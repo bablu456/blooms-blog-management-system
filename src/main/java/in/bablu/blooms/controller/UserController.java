@@ -21,7 +21,6 @@ public class UserController {
     public String registerUser(@RequestBody UserRequest request){
 
         User newUser = new User();
-        newUser.setUsername(request.getUsername());
         newUser.setPassword(request.getPassword());
         newUser.setUsername(request.getUsername());
         newUser.setEmail(request.getEmail());
