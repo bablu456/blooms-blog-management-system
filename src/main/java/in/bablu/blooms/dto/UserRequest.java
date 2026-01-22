@@ -1,12 +1,12 @@
 package in.bablu.blooms.dto;
 
 public class UserRequest {
-    private String id;
     private String username;
     private String email;
     private String name;
     private String password;
     private String profileUrl;
+    private String phoneNumber;
 
     public UserRequest(){
 
@@ -19,12 +19,13 @@ public class UserRequest {
         this.profileUrl = profileUrl;
     }
 
-    public String getId() {
-        return id;
+
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public String getUsername() {

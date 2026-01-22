@@ -15,6 +15,16 @@ public class User {
     // NOTE: Real projects mein hum isse Encrypt (Hash) karke rakhte hain.
     private String password;
 
+    private String phoneNumber;
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
     public String getId() {
         return id;
     }

@@ -1,12 +1,14 @@
 package in.bablu.blooms.services;
 
 
+import in.bablu.blooms.dto.UserResponse;
 import in.bablu.blooms.models.User;
 import in.bablu.blooms.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -27,11 +29,21 @@ public class UserService {
         return " Success : User Register with ID: " + savedUser.getId();
     }
 
-    public User loginUser (String username, String password){
-        User user = userRepository.findByUsername(username).orElse(null);
+    public UserResponse loginUser (String phoneNumber, String password) {
+        Optional<User> user = userRepository.findByPhoneNumberAndPassword(phoneNumber, password);
 
-        if(user!=null && user.getPassword().equals(password)) {
-            return user;
+        if (user.isPresent()) {
+            User user1 = user.get();
+
+            // 2. Agar mil gaya, to Entity ko DTO mein badlo (Password hatao)
+            UserResponse response = new UserResponse(
+                    user1.getUsername(),
+                    user1.getEmail(),
+                    user1.getName(),
+                    user1.getProfileUrl(),
+                    user1.getPhoneNumber()
+            );
+            return response;
         }
         return null;
     }

@@ -6,6 +6,8 @@ import in.bablu.blooms.models.User;
 import in.bablu.blooms.repositories.UserRepository;
 import in.bablu.blooms.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,22 +31,38 @@ public class UserController {
         return userService.registerUser(newUser);
     }
 
-    // Login
     @PostMapping("/login")
-    public UserResponse loginUser(@RequestBody UserRequest loginRequest){
-        User user = userService.loginUser(loginRequest.getUsername(), loginRequest.getPassword());
+    public ResponseEntity<?> login(@RequestBody UserRequest request) {
 
-        if(user!=null){
-            UserResponse userResponse = new UserResponse();
-            userResponse.setId(user.getId());
-            userResponse.setName(user.getName());
-            userResponse.setEmail(user.getEmail());
-            userResponse.setProfileUrl(user.getProfileUrl());
-            userResponse.setUsername(user.getUsername());
-            return userResponse;
+        // Ab ye line sahi match karegi
+        UserResponse response = userService.loginUser(
+                request.getPhoneNumber(),
+                request.getPassword()
+        );
+
+        if (response != null) {
+            return new ResponseEntity<>(response, HttpStatus.OK);
         }
-        return null;
+        return new ResponseEntity<>("❌ Invalid Phone Number or Password", HttpStatus.UNAUTHORIZED);
     }
+
+
+    // Login
+//    @PostMapping("/login")
+//    public UserResponse loginUser(@RequestBody UserRequest loginRequest){
+//        User user = userService.loginUser(loginRequest.getUsername(), loginRequest.getPassword());
+//
+//        if(user!=null){
+//            UserResponse userResponse = new UserResponse();
+//            userResponse.setId(user.getId());
+//            userResponse.setName(user.getName());
+//            userResponse.setEmail(user.getEmail());
+//            userResponse.setProfileUrl(user.getProfileUrl());
+//            userResponse.setUsername(user.getUsername());
+//            return userResponse;
+//        }
+//        return null;
+//    }
 
     @GetMapping
     public List<User> getAllUsers(){

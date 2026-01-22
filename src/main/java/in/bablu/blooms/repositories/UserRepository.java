@@ -15,4 +15,10 @@ public interface UserRepository extends MongoRepository<User,String> {
     // Email Se dhundhane ke Liye
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByPassword(String password);
+
+    Optional<User> findByPhoneNumber(String phone);
+
+    Optional<User> findByPhoneNumberAndPassword(String phone,String password);
+
 }
