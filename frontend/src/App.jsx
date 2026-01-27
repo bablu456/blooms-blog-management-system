@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
+import Register from './pages/Register'; // 👈 Import kiya
 
 // Temporary Home Component (Jab tak asli wala na bane)
 const Home = () => (
@@ -22,8 +23,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Home />} /> {/* Abhi Home pe bhej rahe hain */}
-        </Routes>
+          <Route path="/register" element={<Register />} />
+           </Routes>
       </div>
     </BrowserRouter>
   );

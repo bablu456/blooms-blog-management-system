@@ -1,24 +1,39 @@
 package in.bablu.blooms.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
 public class UserResponse {
     private String id;
     private String username;
     private String email;
     private String name;
     private String profileUrl;
+    private String phoneNumber;
 
     public UserResponse() {}
 
-    // Constructor  For Easy conversation
-    public UserResponse(String id, String username, String email, String name, String profileUrl) {
-        this.id = id;
+    public UserResponse(String username, String email,String name, String profileUrl, String phoneNumber){
         this.username = username;
         this.email = email;
         this.name = name;
         this.profileUrl = profileUrl;
+        this.phoneNumber = phoneNumber;
     }
+    // Constructor  For Easy conversation
 
     // ---- getters and setters ----
+
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
 
     public String getProfileUrl() {
         return profileUrl;

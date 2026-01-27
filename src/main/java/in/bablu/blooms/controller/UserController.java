@@ -3,7 +3,6 @@ package in.bablu.blooms.controller;
 import in.bablu.blooms.dto.UserRequest;
 import in.bablu.blooms.dto.UserResponse;
 import in.bablu.blooms.models.User;
-import in.bablu.blooms.repositories.UserRepository;
 import in.bablu.blooms.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,6 +22,7 @@ public class UserController {
     public String registerUser(@RequestBody UserRequest request){
 
         User newUser = new User();
+        newUser.setPhoneNumber(request.getPhoneNumber());
         newUser.setPassword(request.getPassword());
         newUser.setUsername(request.getUsername());
         newUser.setEmail(request.getEmail());

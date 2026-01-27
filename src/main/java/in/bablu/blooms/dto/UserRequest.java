@@ -11,12 +11,13 @@ public class UserRequest {
     public UserRequest(){
 
     }
-    public UserRequest(String username, String email, String name, String password, String profileUrl) {
+    public UserRequest(String username, String email, String name, String password, String profileUrl,String phoneNumber) {
         this.username = username;
         this.email = email;
         this.name = name;
         this.password = password;
         this.profileUrl = profileUrl;
+        this.phoneNumber = phoneNumber;
     }
 
 
