@@ -3,7 +3,6 @@ package in.bablu.blooms.dto;
 // DTO (Data Transfer Object) - Ye wo parchhi hai jo User bharke dega.
 // Isme sirf wo data hota hai jo User se server tak aana chahiye.
 public class CategoryRequest {
-    private String id;      // Update karte waqt ID chahiye hogi
     private String title;   // Category ka naam (e.g. "Tech")
     private String desc;    // Description
     private String cUrl; // Image URL (Short variable name use kiya hai sir ne)
@@ -18,13 +17,9 @@ public class CategoryRequest {
         this.cUrl = cUrl;
     }
 
-    public String getId() {
-        return id;
-    }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+
+
 
     public String getTitle() {
         return title;

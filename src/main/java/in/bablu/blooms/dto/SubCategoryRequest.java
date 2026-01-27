@@ -1,7 +1,6 @@
 package in.bablu.blooms.dto;
 
 public class SubCategoryRequest {
-    private String id;  //Update ke liye Zaruri hai
     private String categoryId;  // Parent Connection (Kis Category me add Karna hai )
     private String name; // Name (E.g "Core Java")
     private String description; // Description
@@ -15,13 +14,6 @@ public class SubCategoryRequest {
         this.description = description;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
 
     public String getCategoryId() {
         return categoryId;

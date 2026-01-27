@@ -40,7 +40,7 @@ public class CategoryController {
         category.setStatus(Status.PUBLISHED.getDisplayName());
 
         //Unique ID (Current tiem in miliseconds - Jugaad for unique ID)
-        category.setId(String.valueOf(System.currentTimeMillis()));
+//        category.setId(String.valueOf(System.currentTimeMillis()));
 
 
         category.setCreatedBy("Admin");
