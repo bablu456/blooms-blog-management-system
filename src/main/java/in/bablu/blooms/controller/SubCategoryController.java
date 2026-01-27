@@ -1,18 +1,12 @@
 package in.bablu.blooms.controller;
 
-import in.bablu.blooms.Database;
 import in.bablu.blooms.dto.SubCategoryRequest;
 import in.bablu.blooms.dto.SubCategoryResponse;
-import in.bablu.blooms.models.Category;
-import in.bablu.blooms.models.Status;
 import in.bablu.blooms.models.SubCategory;
-import in.bablu.blooms.repositories.SubCategoryRepository;
 import in.bablu.blooms.services.SubCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,6 +51,11 @@ public class SubCategoryController {
     @DeleteMapping("/{id}")
     public boolean dalete(@PathVariable String id){
         return subCategoryService.deleteSubCategory(id);
+    }
+
+    @GetMapping
+    public List<SubCategory> getAll(){
+        return subCategoryService.getAll();
     }
 
 
