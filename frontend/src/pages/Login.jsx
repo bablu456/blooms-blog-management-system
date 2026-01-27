@@ -31,7 +31,7 @@ const Login = () => {
 
     try {
       // Backend ko call lagao
-      const response = await axios.post('http://localhost:8080/users/login', {
+      const response = await axios.post('http://localhost:8080/user/login', {
         phoneNumber: formData.phoneNumber,
         password: formData.password
       });

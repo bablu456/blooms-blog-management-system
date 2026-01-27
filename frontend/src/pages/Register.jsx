@@ -28,7 +28,7 @@ const Register = () => {
 
     try {
       // Backend Call
-      const response = await axios.post('http://localhost:8080/users/register', formData);
+      const response = await axios.post('http://localhost:8080/user/register', formData);
 
       console.log("Registration Success:", response.data);
       alert("🎉 Account Created! Please Login.");
