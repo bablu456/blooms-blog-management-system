@@ -1,12 +1,10 @@
 
-FROM eclipse-temurin:17-jdk-alpine
-
-LABEL maintainer="codewithbablu"
+FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
-COPY target/blooms-0.0.1-SNAPSHOT.jar app.jar
+COPY . .
 
-EXPOSE 8080
+RUN ./mvnw clean package -DskipTests
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD java -jar target/*.jar
