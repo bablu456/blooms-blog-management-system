@@ -1,7 +1,5 @@
 package in.bablu.blooms.dto;
 
-import java.util.List;
-
 // Ye wo packet hai jo Server se Client (UI) ke paas jayega.
 // Hum Model (Category) ko direct nahi bhejte, balki is wrapper me daal kar bhejte hain.
 public class CategoryResponse {
@@ -43,6 +41,15 @@ public class CategoryResponse {
         this.title = title;
     }
 
+    // Backward-compatible aliases for frontend consistency
+    public String getName() {
+        return title;
+    }
+
+    public void setName(String name) {
+        this.title = name;
+    }
+
     public String getDesc() {
         return desc;
     }
@@ -51,12 +58,28 @@ public class CategoryResponse {
         this.desc = desc;
     }
 
+    public String getDescription() {
+        return desc;
+    }
+
+    public void setDescription(String description) {
+        this.desc = description;
+    }
+
     public String getcUrl() {
         return cUrl;
     }
 
     public void setcUrl(String cUrl) {
         this.cUrl = cUrl;
+    }
+
+    public String getImageUrl() {
+        return cUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.cUrl = imageUrl;
     }
 
 }

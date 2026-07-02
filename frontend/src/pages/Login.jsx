@@ -1,108 +1,202 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // Page change karne ke liye
-import axios from 'axios'; // API call ke liye
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import api from '../services/api';
+import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
+
+const getApiErrorMessage = (error, fallbackMessage) => {
+  const payload = error?.response?.data;
+  if (typeof payload === 'string') return payload;
+  if (payload?.message) return payload.message;
+  return fallbackMessage;
+};
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
 
-  // 1. State: User ka data yahan store hoga
+  const [mode, setMode] = useState('password');
   const [formData, setFormData] = useState({
     phoneNumber: '',
-    password: ''
+    password: '',
+    otp: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpRequested, setOtpRequested] = useState(false);
 
-  // Error message dikhane ke liye state
-  const [error, setError] = useState('');
-
-  // 2. Handle Change: Jab user type karega
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.type === 'text' ? 'phoneNumber' : 'password']: e.target.value
-    });
-    // Note: Humne input fields mein 'name' attribute use nahi kiya,
-    // isliye direct target kar rahe hain simple tarike se niche input me 'onChange' dekhna.
+  const afterLoginNavigate = (user) => {
+    login(user);
+    const fallbackRoute = user?.role === 'ROLE_ADMIN' ? '/dashboard' : '/';
+    navigate(location.state?.from?.pathname || fallbackRoute);
   };
 
-  // 3. Handle Submit: Jab button dabega
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Page reload hone se roko
-    setError(''); // Purana error hatao
-
+  const handlePasswordLogin = async (event) => {
+    event.preventDefault();
+    setLoading(true);
     try {
-      // Backend ko call lagao
-      const response = await axios.post('http://localhost:8080/user/login', {
-        phoneNumber: formData.phoneNumber,
-        password: formData.password
+      const response = await api.post('/user/login/password', {
+        phoneNumber: formData.phoneNumber.trim(),
+        password: formData.password,
       });
-
-      // Agar success hua:
-      console.log("Login Success:", response.data);
-      alert("Welcome Back! " + response.data.name);
-
-      // User ko Home page par bhej do
-      navigate('/');
-
-    } catch (err) {
-      // Agar fail hua:
-      console.error("Login Failed:", err);
-      setError("❌ Invalid Phone Number or Password!");
+      afterLoginNavigate(response.data);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Invalid phone number or password'));
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
+  const handleRequestOtp = async () => {
+    if (!formData.phoneNumber.trim()) {
+      toast.error('Phone number is required');
+      return;
+    }
+    setOtpSending(true);
+    try {
+      const response = await api.post('/user/login/otp/request', {
+        phoneNumber: formData.phoneNumber.trim(),
+      });
+      setOtpRequested(true);
+      toast.success(response.data?.message || 'OTP sent');
+      if (response.data?.debugOtp) {
+        toast.success(`Dev OTP: ${response.data.debugOtp}`, { duration: 5000 });
+      }
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to send OTP'));
+    } finally {
+      setOtpSending(false);
+    }
+  };
 
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800">Welcome Back! 👋</h2>
-          <p className="text-gray-500 mt-2">Enter your details to access your account</p>
+  const handleOtpLogin = async (event) => {
+    event.preventDefault();
+    if (!otpRequested) {
+      toast.error('Request OTP first');
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await api.post('/user/login/otp/verify', {
+        phoneNumber: formData.phoneNumber.trim(),
+        otp: formData.otp.trim(),
+      });
+      afterLoginNavigate(response.data);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Invalid or expired OTP'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleModeChange = (nextMode) => {
+    setMode(nextMode);
+    setOtpRequested(false);
+    setFormData((previous) => ({ ...previous, otp: '' }));
+  };
+
+  return (
+    <div className="min-h-[calc(100vh-6.5rem)] flex items-center justify-center px-4 py-10">
+      <div className="mesh-card w-full max-w-md rounded-3xl p-8">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold text-slate-900">Welcome back</h2>
+          <p className="mt-2 text-slate-600">Login with password or one-time OTP.</p>
         </div>
 
-        {/* 4. Form Submit Event */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="mb-6 grid grid-cols-2 rounded-xl bg-white/60 p-1 surface-ring">
+          <button
+            type="button"
+            onClick={() => handleModeChange('password')}
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+              mode === 'password' ? 'bg-slate-900 text-white' : 'text-slate-600'
+            }`}
+          >
+            Password
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('otp')}
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+              mode === 'otp' ? 'bg-slate-900 text-white' : 'text-slate-600'
+            }`}
+          >
+            OTP
+          </button>
+        </div>
 
-          {/* Error Message Show karne ke liye */}
-          {error && (
-            <div className="bg-red-100 text-red-700 p-3 rounded-lg text-sm text-center">
-              {error}
-            </div>
-          )}
-
+        <form onSubmit={mode === 'password' ? handlePasswordLogin : handleOtpLogin} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Phone number</label>
             <input
               type="text"
               placeholder="e.g. 9876543210"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none transition"
-              // State se connect kiya
+              className="input-surface w-full rounded-xl px-4 py-3 text-sm"
               value={formData.phoneNumber}
-              onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+              onChange={(event) => setFormData((prev) => ({ ...prev, phoneNumber: event.target.value }))}
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none transition"
-              // State se connect kiya
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              required
-            />
-          </div>
+          {mode === 'password' ? (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
+              <input
+                type="password"
+                placeholder="Enter password"
+                className="input-surface w-full rounded-xl px-4 py-3 text-sm"
+                value={formData.password}
+                onChange={(event) => setFormData((prev) => ({ ...prev, password: event.target.value }))}
+                required
+              />
+            </div>
+          ) : (
+            <>
+              <div className="rounded-xl border border-slate-200 bg-white/70 p-3">
+                <button
+                  type="button"
+                  onClick={handleRequestOtp}
+                  disabled={otpSending}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700 disabled:opacity-60"
+                >
+                  {otpSending ? 'Sending OTP...' : otpRequested ? 'Resend OTP' : 'Send OTP'}
+                </button>
+              </div>
 
-          <button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-bold text-lg hover:opacity-90 transition shadow-lg transform active:scale-95">
-            Sign In
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">OTP</label>
+                <input
+                  type="text"
+                  placeholder="Enter 6-digit OTP"
+                  className="input-surface w-full rounded-xl px-4 py-3 text-sm"
+                  value={formData.otp}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, otp: event.target.value }))}
+                  required
+                />
+              </div>
+            </>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || (mode === 'otp' && !otpRequested)}
+            className="button-primary w-full rounded-xl py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {loading ? 'Signing in...' : mode === 'password' ? 'Sign in with password' : 'Verify OTP & Sign in'}
           </button>
         </form>
 
-        <p className="text-center text-gray-600 mt-6">
-          Don't have an account?
-          <Link to="/register" className="text-indigo-600 font-bold ml-1 hover:underline">Register</Link>
+        <div className="mt-4 text-center text-sm">
+          <Link to="/forgot-password" className="font-semibold text-sky-700 hover:underline">
+            Forgot password?
+          </Link>
+        </div>
+
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Don&apos;t have an account?
+          <Link to="/register" className="ml-1 font-semibold text-sky-700 hover:underline">
+            Register
+          </Link>
         </p>
       </div>
     </div>

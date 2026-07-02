@@ -3,9 +3,10 @@ package in.bablu.blooms.models;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.sql.Timestamp;
-import java.util.List;
 import java.util.Date;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 // Yeh class ek blueprint hai ki hamara Blog post kaisa dikhega
 @Document(collection = "blogs")
@@ -20,6 +21,8 @@ public class Blog {
 
     private String content;
 
+    private String imageUrl;
+
     private String status;
 
     private String authorId;
@@ -28,7 +31,9 @@ public class Blog {
 
     private Date createdAt;
 
+    private Set<String> likes = new LinkedHashSet<>();
 
+    private long likeCount;
 
     private List<CategoryMapping> categoryMappings;
 
@@ -38,6 +43,29 @@ public class Blog {
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Set<String> getLikes() {
+        if (likes == null) {
+            likes = new LinkedHashSet<>();
+        }
+        return likes;
+    }
+
+    public void setLikes(Set<String> likes) {
+        this.likes = likes == null ? new LinkedHashSet<>() : new LinkedHashSet<>(likes);
+        this.likeCount = this.likes.size();
+    }
+
+    public long getLikeCount() {
+        if (likeCount != getLikes().size()) {
+            likeCount = getLikes().size();
+        }
+        return likeCount;
+    }
+
+    public void setLikeCount(long likeCount) {
+        this.likeCount = Math.max(likeCount, 0);
     }
 
     public String getId() {
@@ -70,6 +98,14 @@ public class Blog {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public String getStatus() {

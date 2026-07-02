@@ -6,16 +6,57 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "users")
 public class User {
     @Id
-    private String id; //1. Unique ID har user ke liye
-    private String username; //2. Username login id jise daal kar wo login karega (Unique honi chahiye)
-    private String email; //3. Contact Info
-    private String name; //4. Real Name: Display karne ke liye(Eg., "Bablu Kumar")
-    private String profileUrl;//5. Photo Link: Profile picture ka url String
+    private String id; // 1. Unique ID har user ke liye
+    private String username; // 2. Username login id jise daal kar wo login karega (Unique honi chahiye)
+    private String email; // 3. Contact Info
+    private String name; // 4. Real Name: Display karne ke liye(Eg., "Bablu Kumar")
+    private String profileUrl;// 5. Photo Link: Profile picture ka url String
+
+    private String role = "ROLE_USER"; // Default Role
+    private String bio; // Author Bio
+    private String website;
+    private SocialLinks socialLinks = new SocialLinks();
+
     // 6. Security Key: Login karne ke liye
     // NOTE: Real projects mein hum isse Encrypt (Hash) karke rakhte hain.
     private String password;
 
     private String phoneNumber;
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getWebsite() {
+        return website;
+    }
+
+    public void setWebsite(String website) {
+        this.website = website;
+    }
+
+    public SocialLinks getSocialLinks() {
+        if (socialLinks == null) {
+            socialLinks = new SocialLinks();
+        }
+        return socialLinks;
+    }
+
+    public void setSocialLinks(SocialLinks socialLinks) {
+        this.socialLinks = socialLinks == null ? new SocialLinks() : socialLinks;
+    }
 
     public String getPhoneNumber() {
         return phoneNumber;

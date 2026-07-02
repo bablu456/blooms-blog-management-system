@@ -1,113 +1,160 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
+import toast from 'react-hot-toast';
+import { User, Mail, Phone, Lock, AtSign, Sparkles } from 'lucide-react';
 
 const Register = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  // State to store inputs
   const [formData, setFormData] = useState({
+    username: '',
     name: '',
     email: '',
     phoneNumber: '',
     password: '',
-    profileUrl: 'https://cdn-icons-png.flaticon.com/512/149/149071.png' // Default Image
+    profileUrl: 'https://cdn-icons-png.flaticon.com/512/149/149071.png'
   });
 
-  const [error, setError] = useState('');
-
-  // Handle Input Change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle Form Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setLoading(true);
 
     try {
-      // Backend Call
-      const response = await axios.post('http://localhost:8080/user/register', formData);
+      const response = await api.post('/user/register', formData);
 
-      console.log("Registration Success:", response.data);
-      alert("🎉 Account Created! Please Login.");
-
-      // Redirect to Login Page
-      navigate('/login');
-
+      // Check if backend returned error string
+      if (typeof response.data === 'string' && response.data.includes("Error")) {
+        toast.error(response.data);
+      } else {
+        toast.success("Account Created Successfully! 🎉");
+        navigate('/login');
+      }
     } catch (err) {
       console.error("Registration Failed:", err);
-      // Backend se jo error msg aayega wo dikhayenge (e.g. "Email already exists")
-      setError(err.response?.data || "Registration Failed! Try again.");
+      toast.error("Registration Failed! Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50 py-10">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-3xl shadow-xl border border-gray-100">
 
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800">Create Account 🚀</h2>
-          <p className="text-gray-500 mt-2">Join Blooms community today</p>
+        {/* Header */}
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center">
+            <Sparkles className="h-6 w-6 text-indigo-600" />
+          </div>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Create Account</h2>
+          <p className="mt-2 text-sm text-gray-600">Join the Blooms community</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form */}
+        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
 
-          {error && (
-            <div className="bg-red-100 text-red-700 p-3 rounded-lg text-sm text-center">
-              {error}
+          {/* Username */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <AtSign className="h-5 w-5 text-gray-400" />
             </div>
-          )}
-
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
             <input
-              type="text" name="name" placeholder="John Doe" required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+              name="username"
+              type="text"
+              required
+              placeholder="Username"
+              value={formData.username}
               onChange={handleChange}
+              className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+            />
+          </div>
+
+          {/* Full Name */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              name="name"
+              type="text"
+              required
+              placeholder="Full Name"
+              value={formData.name}
+              onChange={handleChange}
+              className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none transition"
             />
           </div>
 
           {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Mail className="h-5 w-5 text-gray-400" />
+            </div>
             <input
-              type="email" name="email" placeholder="john@example.com" required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+              name="email"
+              type="email"
+              required
+              placeholder="Email Address"
+              value={formData.email}
               onChange={handleChange}
+              className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none transition"
             />
           </div>
 
-          {/* Phone */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+          {/* Phone Number */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Phone className="h-5 w-5 text-gray-400" />
+            </div>
             <input
-              type="text" name="phoneNumber" placeholder="9876543210" required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+              name="phoneNumber"
+              type="text"
+              required
+              placeholder="Phone Number"
+              value={formData.phoneNumber}
               onChange={handleChange}
+              className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none transition"
             />
           </div>
 
           {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Lock className="h-5 w-5 text-gray-400" />
+            </div>
             <input
-              type="password" name="password" placeholder="••••••••" required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+              name="password"
+              type="password"
+              required
+              placeholder="Password"
+              value={formData.password}
               onChange={handleChange}
+              className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none transition"
             />
           </div>
 
-          <button className="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-indigo-700 transition shadow-lg mt-4">
-            Sign Up
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
 
-        <p className="text-center text-gray-600 mt-6">
+        {/* Footer */}
+        <p className="text-center text-sm text-gray-600">
           Already have an account?
-          <Link to="/login" className="text-indigo-600 font-bold ml-1 hover:underline">Login</Link>
+          <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500 ml-1">
+            Login
+          </Link>
         </p>
       </div>
     </div>

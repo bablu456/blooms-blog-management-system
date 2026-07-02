@@ -1,8 +1,18 @@
 package in.bablu.blooms.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 public class SubCategoryRequest {
+    @NotBlank(message = "Category ID is required")
     private String categoryId;  // Parent Connection (Kis Category me add Karna hai )
+
+    @NotBlank(message = "Sub-category name is required")
+    @Size(min = 2, max = 80, message = "Sub-category name must be 2-80 characters")
     private String name; // Name (E.g "Core Java")
+
+    @NotBlank(message = "Sub-category description is required")
+    @Size(min = 5, max = 300, message = "Sub-category description must be 5-300 characters")
     private String description; // Description
 
     //Default Constructor

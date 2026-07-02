@@ -7,8 +7,12 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface BlogRepository extends MongoRepository<Blog, String>{
+public interface BlogRepository extends MongoRepository<Blog, String> {
 
-    List<Blog> findByAuthorId(String authorId);
+    List<Blog> findByAuthorIdOrderByCreatedAtDesc(String authorId);
 
+    List<Blog> findByLikesContainingOrderByCreatedAtDesc(String userId);
+
+    // Search by title (case insensitive)
+    List<Blog> findByTitleContainingIgnoreCase(String title);
 }
