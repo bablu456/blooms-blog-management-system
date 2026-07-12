@@ -2,17 +2,14 @@ package in.bablu.blooms.services;
 
 import in.bablu.blooms.models.OtpPurpose;
 import in.bablu.blooms.models.User;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OtpNotificationService {
 
-    @Autowired(required = false)
-    private JavaMailSender mailSender;
+    @org.springframework.beans.factory.annotation.Autowired
+    private EmailService emailService;
 
     @Value("${app.auth.otp.delivery:LOG}")
     private String deliveryMode;
@@ -37,25 +34,6 @@ public class OtpNotificationService {
     }
 
     private void sendEmailOtp(User user, String otp, OtpPurpose purpose, long expirySeconds) {
-        if (mailSender == null) {
-            throw new IllegalStateException("Email delivery requested but JavaMailSender is not configured");
-        }
-
-        String subject = purpose == OtpPurpose.LOGIN
-                ? "Your Blooms login OTP"
-                : "Your Blooms password reset OTP";
-
-        String body = "Hi " + (user.getName() != null ? user.getName() : "there") + ",\n\n"
-                + "Your OTP is: " + otp + "\n"
-                + "This OTP expires in " + expirySeconds + " seconds.\n\n"
-                + "If you did not request this, please ignore this message.";
-
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(senderEmail);
-        message.setTo(user.getEmail());
-        message.setSubject(subject);
-        message.setText(body);
-
-        mailSender.send(message);
+        emailService.sendOtpEmail(user, otp, purpose, expirySeconds);
     }
 }

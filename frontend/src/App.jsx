@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
+import ChatbotWidget from './components/ChatbotWidget';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -56,6 +57,8 @@ function App() {
             <Route path="/author/:id" element={<AuthorProfile />} />
             <Route path="/blog/:id" element={<BlogDetails />} />
           </Routes>
+
+          <ChatbotWidget />
 
           <Toaster
             position="top-right"

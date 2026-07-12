@@ -110,6 +110,15 @@ public class UserService {
         return authSessionService.issueTokens(user);
     }
 
+    public OtpDispatchResponse requestEmailLoginOtp(String email) {
+        return otpService.sendEmailOtp(email, OtpPurpose.LOGIN);
+    }
+
+    public AuthTokenResponse loginWithEmailOtp(String email, String otp) {
+        User user = otpService.verifyEmailOtp(email, otp, OtpPurpose.LOGIN);
+        return authSessionService.issueTokens(user);
+    }
+
     public OtpDispatchResponse requestPasswordResetOtp(String phoneNumber) {
         return otpService.sendOtp(phoneNumber, OtpPurpose.PASSWORD_RESET);
     }

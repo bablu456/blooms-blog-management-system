@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Date;
 import java.util.Optional;
 
@@ -32,6 +33,9 @@ public class OtpService {
     @Autowired
     private OtpNotificationService otpNotificationService;
 
+    @Autowired
+    private EmailService emailService;
+
     @Value("${app.auth.otp.expiry-seconds:300}")
     private long otpExpirySeconds;
 
@@ -43,6 +47,8 @@ public class OtpService {
 
     @Value("${app.auth.otp.debug-return-in-response:false}")
     private boolean debugReturnOtpInResponse;
+
+    private final ConcurrentHashMap<String, EmailOtpEntry> emailOtpStore = new ConcurrentHashMap<>();
 
     public OtpDispatchResponse sendOtp(String phoneNumber, OtpPurpose purpose) {
         String normalizedPhone = normalizePhone(phoneNumber);
@@ -131,9 +137,91 @@ public class OtpService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found for this OTP"));
     }
 
+    public synchronized OtpDispatchResponse sendEmailOtp(String email, OtpPurpose purpose) {
+        String normalizedEmail = normalizeEmail(email);
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("No account found for this email"));
+
+        long now = System.currentTimeMillis();
+        cleanupExpiredEmailOtps(now);
+
+        String key = buildEmailOtpKey(normalizedEmail, purpose);
+        EmailOtpEntry existingOtp = emailOtpStore.get(key);
+        if (existingOtp != null && existingOtp.getExpiresAtMillis() > now) {
+            long secondsSinceIssued = (now - existingOtp.getCreatedAtMillis()) / 1000L;
+            if (secondsSinceIssued < resendCooldownSeconds) {
+                long waitSeconds = resendCooldownSeconds - secondsSinceIssued;
+                throw new IllegalStateException("Please wait " + waitSeconds + " seconds before requesting a new OTP");
+            }
+        }
+
+        String otp = generateSixDigitOtp();
+        EmailOtpEntry nextEntry = new EmailOtpEntry(
+                user.getId(),
+                passwordEncoder.encode(otp),
+                now,
+                now + otpExpirySeconds * 1000L,
+                0,
+                maxAttempts
+        );
+        emailOtpStore.put(key, nextEntry);
+        emailService.sendOtpEmail(user, otp, purpose, otpExpirySeconds);
+
+        return new OtpDispatchResponse(
+                "OTP sent successfully",
+                otpExpirySeconds,
+                debugReturnOtpInResponse ? otp : null
+        );
+    }
+
+    public synchronized User verifyEmailOtp(String email, String otp, OtpPurpose purpose) {
+        String normalizedEmail = normalizeEmail(email);
+        String normalizedOtp = otp == null ? "" : otp.trim();
+        if (normalizedOtp.isEmpty()) {
+            throw new IllegalArgumentException("OTP is required");
+        }
+
+        long now = System.currentTimeMillis();
+        cleanupExpiredEmailOtps(now);
+
+        String key = buildEmailOtpKey(normalizedEmail, purpose);
+        EmailOtpEntry storedOtp = emailOtpStore.get(key);
+        if (storedOtp == null) {
+            throw new IllegalArgumentException("No active OTP found. Please request a new OTP.");
+        }
+
+        if (storedOtp.getExpiresAtMillis() <= now) {
+            emailOtpStore.remove(key);
+            throw new IllegalArgumentException("OTP has expired. Please request a new OTP.");
+        }
+
+        if (storedOtp.getAttemptCount() >= storedOtp.getMaxAttempts()) {
+            emailOtpStore.remove(key);
+            throw new IllegalArgumentException("Maximum OTP attempts reached. Please request a new OTP.");
+        }
+
+        if (!passwordEncoder.matches(normalizedOtp, storedOtp.getOtpHash())) {
+            storedOtp.incrementAttemptCount();
+            if (storedOtp.getAttemptCount() >= storedOtp.getMaxAttempts()) {
+                emailOtpStore.remove(key);
+            } else {
+                emailOtpStore.put(key, storedOtp);
+            }
+            throw new IllegalArgumentException("Invalid OTP");
+        }
+
+        emailOtpStore.remove(key);
+        return userRepository.findById(storedOtp.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found for this OTP"));
+    }
+
     private String generateSixDigitOtp() {
         int value = 100000 + RANDOM.nextInt(900000);
         return String.valueOf(value);
+    }
+
+    private void cleanupExpiredEmailOtps(long now) {
+        emailOtpStore.entrySet().removeIf(entry -> entry.getValue().getExpiresAtMillis() <= now);
     }
 
     private String normalizePhone(String phoneNumber) {
@@ -145,5 +233,73 @@ public class OtpService {
             throw new IllegalArgumentException("Phone number is required");
         }
         return normalized;
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        String normalized = email.trim().toLowerCase();
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        return normalized;
+    }
+
+    private String buildEmailOtpKey(String email, OtpPurpose purpose) {
+        return purpose.name() + ":" + email;
+    }
+
+    private static final class EmailOtpEntry {
+        private final String userId;
+        private final String otpHash;
+        private final long createdAtMillis;
+        private final long expiresAtMillis;
+        private int attemptCount;
+        private final int maxAttempts;
+
+        private EmailOtpEntry(
+                String userId,
+                String otpHash,
+                long createdAtMillis,
+                long expiresAtMillis,
+                int attemptCount,
+                int maxAttempts
+        ) {
+            this.userId = userId;
+            this.otpHash = otpHash;
+            this.createdAtMillis = createdAtMillis;
+            this.expiresAtMillis = expiresAtMillis;
+            this.attemptCount = attemptCount;
+            this.maxAttempts = maxAttempts;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public String getOtpHash() {
+            return otpHash;
+        }
+
+        public long getCreatedAtMillis() {
+            return createdAtMillis;
+        }
+
+        public long getExpiresAtMillis() {
+            return expiresAtMillis;
+        }
+
+        public int getAttemptCount() {
+            return attemptCount;
+        }
+
+        public void incrementAttemptCount() {
+            this.attemptCount = this.attemptCount + 1;
+        }
+
+        public int getMaxAttempts() {
+            return maxAttempts;
+        }
     }
 }

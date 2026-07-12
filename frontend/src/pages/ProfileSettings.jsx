@@ -1,16 +1,20 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Skeleton from 'react-loading-skeleton';
+import Cropper from 'react-easy-crop';
+import 'react-easy-crop/react-easy-crop.css';
 import {
   ArrowUpRight,
   BadgeCheck,
   BookHeart,
   BookOpenText,
-  Globe,
+  Camera,
   Github,
+  Globe,
   Heart,
+  ImagePlus,
   Linkedin,
   PenSquare,
   Save,
@@ -19,6 +23,7 @@ import {
   Trash2,
   Twitter,
   UserRound,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
@@ -37,6 +42,8 @@ const DEFAULT_SOCIAL_LINKS = {
   linkedIn: '',
   gitHub: '',
 };
+
+const MAX_AVATAR_FILE_SIZE_MB = 8;
 
 const fetchCurrentUser = async () => {
   const response = await api.get('/user/me');
@@ -96,6 +103,79 @@ const getTabFromParams = (searchParams) => {
   return Object.values(TABS).includes(requestedTab) ? requestedTab : TABS.personal;
 };
 
+const getUserInitials = (name, username) => {
+  const source = name?.trim() || username?.trim() || 'User';
+  return source
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join('')
+    .toUpperCase();
+};
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => resolve(reader.result?.toString() || ''));
+    reader.addEventListener('error', () => reject(new Error('Could not read the selected image')));
+    reader.readAsDataURL(file);
+  });
+
+const createImage = (imageSrc) =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', () => reject(new Error('Could not load the selected image')));
+    image.src = imageSrc;
+  });
+
+const getCroppedAvatarFile = async (imageSrc, croppedAreaPixels, originalFileName) => {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  canvas.width = croppedAreaPixels.width;
+  canvas.height = croppedAreaPixels.height;
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Canvas is not available in this browser');
+  }
+
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(
+    image,
+    croppedAreaPixels.x,
+    croppedAreaPixels.y,
+    croppedAreaPixels.width,
+    croppedAreaPixels.height,
+    0,
+    0,
+    croppedAreaPixels.width,
+    croppedAreaPixels.height
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('Could not prepare the cropped avatar'));
+          return;
+        }
+
+        const safeBaseName = (originalFileName || 'blooms-avatar').replace(/\.[^/.]+$/, '');
+        resolve(
+          new File([blob], `${safeBaseName}-cropped.jpg`, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          })
+        );
+      },
+      'image/jpeg',
+      0.92
+    );
+  });
+};
+
 const ProfileSettings = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -111,6 +191,16 @@ const ProfileSettings = () => {
       socialLinks: DEFAULT_SOCIAL_LINKS,
     })
   );
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [avatarSource, setAvatarSource] = useState('');
+  const [avatarCrop, setAvatarCrop] = useState({ x: 0, y: 0 });
+  const [avatarZoom, setAvatarZoom] = useState(1);
+  const [avatarCroppedAreaPixels, setAvatarCroppedAreaPixels] = useState(null);
+  const [avatarFileName, setAvatarFileName] = useState('');
+  const [croppedAvatarFile, setCroppedAvatarFile] = useState(null);
+  const [croppedAvatarPreviewUrl, setCroppedAvatarPreviewUrl] = useState('');
+  const [isPreparingAvatar, setIsPreparingAvatar] = useState(false);
+  const avatarInputRef = useRef(null);
 
   useEffect(() => {
     const nextTab = getTabFromParams(searchParams);
@@ -118,6 +208,14 @@ const ProfileSettings = () => {
       setActiveTab(nextTab);
     }
   }, [activeTab, searchParams]);
+
+  useEffect(() => {
+    return () => {
+      if (croppedAvatarPreviewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(croppedAvatarPreviewUrl);
+      }
+    };
+  }, [croppedAvatarPreviewUrl]);
 
   const profileQuery = useQuery({
     queryKey: ['user-me'],
@@ -147,6 +245,12 @@ const ProfileSettings = () => {
     setFormData(source);
   }, [currentUser, profileQuery.data]);
 
+  const avatarPreviewUrl = croppedAvatarPreviewUrl || formData.profileUrl || '';
+  const avatarInitials = useMemo(
+    () => getUserInitials(formData.name || currentUser?.name, currentUser?.username),
+    [currentUser?.name, currentUser?.username, formData.name]
+  );
+
   const categoryLabelMap = useMemo(
     () =>
       Object.fromEntries(
@@ -155,28 +259,22 @@ const ProfileSettings = () => {
     [categoriesQuery.data]
   );
 
-  const myBlogs = useMemo(
-    () => (myBlogsQuery.data || []).map(normalizeBlog),
-    [myBlogsQuery.data]
-  );
+  const myBlogs = useMemo(() => (myBlogsQuery.data || []).map(normalizeBlog), [myBlogsQuery.data]);
 
-  const likedBlogs = useMemo(
-    () => (likedBlogsQuery.data || []).map(normalizeBlog),
-    [likedBlogsQuery.data]
-  );
+  const likedBlogs = useMemo(() => (likedBlogsQuery.data || []).map(normalizeBlog), [likedBlogsQuery.data]);
 
   const profileCompleteness = useMemo(() => {
     const completedFields = [
       formData.name,
       formData.bio,
-      formData.profileUrl,
+      avatarPreviewUrl ? 'avatar-ready' : '',
       formData.website,
       formData.socialLinks.twitter,
       formData.socialLinks.linkedIn,
       formData.socialLinks.gitHub,
     ].filter((value) => value && value.trim().length > 0).length;
     return Math.round((completedFields / 7) * 100);
-  }, [formData]);
+  }, [avatarPreviewUrl, formData]);
 
   const saveProfileMutation = useMutation({
     mutationFn: (payload) => api.put(`/user/${currentUser.id}`, payload),
@@ -206,6 +304,18 @@ const ProfileSettings = () => {
     },
   });
 
+  const resetCropperState = () => {
+    setIsCropModalOpen(false);
+    setAvatarSource('');
+    setAvatarCrop({ x: 0, y: 0 });
+    setAvatarZoom(1);
+    setAvatarCroppedAreaPixels(null);
+    setAvatarFileName('');
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = '';
+    }
+  };
+
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     const nextParams = new URLSearchParams(searchParams);
@@ -229,6 +339,81 @@ const ProfileSettings = () => {
         [key]: value,
       },
     }));
+  };
+
+  const openAvatarPicker = () => {
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarFileSelection = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_FILE_SIZE_MB * 1024 * 1024) {
+      toast.error(`Please select an image smaller than ${MAX_AVATAR_FILE_SIZE_MB}MB.`);
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const nextAvatarSource = await readFileAsDataUrl(file);
+      setAvatarSource(nextAvatarSource);
+      setAvatarFileName(file.name);
+      setAvatarCrop({ x: 0, y: 0 });
+      setAvatarZoom(1);
+      setAvatarCroppedAreaPixels(null);
+      setIsCropModalOpen(true);
+    } catch (error) {
+      toast.error(error.message || 'Could not open the selected image.');
+      event.target.value = '';
+    }
+  };
+
+  const handleAvatarCropSave = async () => {
+    if (!avatarSource || !avatarCroppedAreaPixels) {
+      toast.error('Adjust the crop before saving.');
+      return;
+    }
+
+    setIsPreparingAvatar(true);
+    try {
+      const nextAvatarFile = await getCroppedAvatarFile(
+        avatarSource,
+        avatarCroppedAreaPixels,
+        avatarFileName
+      );
+      const nextPreviewUrl = URL.createObjectURL(nextAvatarFile);
+
+      if (croppedAvatarPreviewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(croppedAvatarPreviewUrl);
+      }
+
+      setCroppedAvatarFile(nextAvatarFile);
+      setCroppedAvatarPreviewUrl(nextPreviewUrl);
+      resetCropperState();
+      toast.success('Cropped avatar is ready for the upload phase.');
+    } catch (error) {
+      toast.error(error.message || 'Could not prepare the cropped avatar.');
+    } finally {
+      setIsPreparingAvatar(false);
+    }
+  };
+
+  const clearPendingAvatar = () => {
+    if (croppedAvatarPreviewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(croppedAvatarPreviewUrl);
+    }
+    setCroppedAvatarPreviewUrl('');
+    setCroppedAvatarFile(null);
+    toast.success('Local avatar draft removed.');
   };
 
   const handleSaveProfile = (event) => {
@@ -297,15 +482,15 @@ const ProfileSettings = () => {
 
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
               <div className="shrink-0">
-                {formData.profileUrl ? (
+                {avatarPreviewUrl ? (
                   <img
-                    src={formData.profileUrl}
+                    src={avatarPreviewUrl}
                     alt={formData.name || 'Profile'}
                     className="h-24 w-24 rounded-[1.5rem] border border-white/70 object-cover shadow-xl shadow-sky-500/10"
                   />
                 ) : (
                   <div className="flex h-24 w-24 items-center justify-center rounded-[1.5rem] border border-white/70 bg-white/80 text-slate-500 shadow-xl shadow-sky-500/10">
-                    <UserRound size={34} />
+                    <span className="text-xl font-semibold text-slate-700">{avatarInitials}</span>
                   </div>
                 )}
               </div>
@@ -320,6 +505,11 @@ const ProfileSettings = () => {
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
                   <span className="rounded-full bg-white/75 px-3 py-1">@{currentUser?.username || 'writer'}</span>
                   <span className="rounded-full bg-white/75 px-3 py-1">{currentUser?.role || 'ROLE_USER'}</span>
+                  {croppedAvatarFile ? (
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+                      Avatar draft ready
+                    </span>
+                  ) : null}
                   {formData.website ? (
                     <a
                       href={formData.website}
@@ -414,6 +604,79 @@ const ProfileSettings = () => {
                     </p>
                   </div>
 
+                  <div className="mb-6 rounded-[1.5rem] border border-white/70 bg-white/72 p-5 shadow-[0_16px_36px_rgba(15,23,42,0.06)]">
+                    <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={openAvatarPicker}
+                          className="group relative overflow-hidden rounded-[1.75rem] border border-white/70 shadow-xl shadow-sky-500/10 transition hover:-translate-y-0.5"
+                        >
+                          {avatarPreviewUrl ? (
+                            <img
+                              src={avatarPreviewUrl}
+                              alt={formData.name || 'Profile avatar'}
+                              className="h-24 w-24 object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-24 w-24 items-center justify-center bg-gradient-to-br from-sky-500 via-cyan-500 to-emerald-400 text-xl font-semibold text-white">
+                              {avatarInitials}
+                            </div>
+                          )}
+
+                          <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-slate-950/70 to-transparent p-2 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100">
+                            Change photo
+                          </div>
+                        </button>
+
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            Profile Photo
+                          </h4>
+                          <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-600">
+                            Click your avatar to upload from your device, crop it into a clean profile shot, and stage it for the next backend upload phase.
+                          </p>
+                          {croppedAvatarFile ? (
+                            <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                              <Camera size={13} />
+                              {croppedAvatarFile.name}
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        <input
+                          ref={avatarInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarFileSelection}
+                        />
+
+                        <button
+                          type="button"
+                          onClick={openAvatarPicker}
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:text-sky-700"
+                        >
+                          <ImagePlus size={16} />
+                          Choose Image
+                        </button>
+
+                        {croppedAvatarFile ? (
+                          <button
+                            type="button"
+                            onClick={clearPendingAvatar}
+                            className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                          >
+                            <X size={16} />
+                            Clear Draft
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid gap-5 md:grid-cols-2">
                     <div>
                       <label className="mb-2 block text-sm font-medium text-slate-700">Full Name</label>
@@ -428,14 +691,14 @@ const ProfileSettings = () => {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-700">Profile Photo URL</label>
+                      <label className="mb-2 block text-sm font-medium text-slate-700">Website</label>
                       <input
                         type="text"
-                        name="profileUrl"
-                        value={formData.profileUrl}
+                        name="website"
+                        value={formData.website}
                         onChange={handleFieldChange}
                         className="input-surface w-full rounded-xl px-4 py-3 text-sm"
-                        placeholder="https://..."
+                        placeholder="https://your-site.com"
                       />
                     </div>
                   </div>
@@ -449,18 +712,6 @@ const ProfileSettings = () => {
                       rows="5"
                       className="input-surface w-full rounded-2xl px-4 py-3 text-sm"
                       placeholder="Describe your expertise, voice, and what you publish about."
-                    />
-                  </div>
-
-                  <div className="mt-5">
-                    <label className="mb-2 block text-sm font-medium text-slate-700">Website</label>
-                    <input
-                      type="text"
-                      name="website"
-                      value={formData.website}
-                      onChange={handleFieldChange}
-                      className="input-surface w-full rounded-xl px-4 py-3 text-sm"
-                      placeholder="https://your-site.com"
                     />
                   </div>
 
@@ -517,6 +768,12 @@ const ProfileSettings = () => {
                     </div>
                   </div>
 
+                  {croppedAvatarFile ? (
+                    <div className="mt-6 rounded-2xl border border-emerald-200/80 bg-emerald-50/85 px-4 py-3 text-sm text-emerald-800">
+                      Cropped avatar prepared as a local <code className="font-semibold">File</code> object. We will send this to the backend upload endpoint in the next phase.
+                    </div>
+                  ) : null}
+
                   <div className="mt-8 flex justify-end">
                     <button
                       type="submit"
@@ -537,15 +794,15 @@ const ProfileSettings = () => {
 
                     <div className="mt-4 rounded-[1.5rem] border border-slate-200/70 bg-white/75 p-5">
                       <div className="flex items-center gap-4">
-                        {formData.profileUrl ? (
+                        {avatarPreviewUrl ? (
                           <img
-                            src={formData.profileUrl}
+                            src={avatarPreviewUrl}
                             alt={formData.name || 'Profile preview'}
                             className="h-16 w-16 rounded-2xl object-cover"
                           />
                         ) : (
-                          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-                            <UserRound size={24} />
+                          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-lg font-semibold text-slate-700">
+                            {avatarInitials}
                           </div>
                         )}
 
@@ -788,6 +1045,105 @@ const ProfileSettings = () => {
           </AnimatePresence>
         </section>
       </div>
+
+      <AnimatePresence>
+        {isCropModalOpen ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.96 }}
+              transition={{ duration: 0.22 }}
+              className="w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/15 bg-slate-950 text-white shadow-[0_32px_90px_rgba(2,6,23,0.55)]"
+            >
+              <div className="grid lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="relative h-[380px] bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.2),_transparent_42%),radial-gradient(circle_at_bottom,_rgba(16,185,129,0.18),_transparent_40%),linear-gradient(180deg,_rgba(2,6,23,0.98),_rgba(15,23,42,0.96))] sm:h-[440px]">
+                  <Cropper
+                    image={avatarSource}
+                    crop={avatarCrop}
+                    zoom={avatarZoom}
+                    aspect={1}
+                    cropShape="round"
+                    showGrid={false}
+                    onCropChange={setAvatarCrop}
+                    onZoomChange={setAvatarZoom}
+                    onCropComplete={(_, croppedPixels) => setAvatarCroppedAreaPixels(croppedPixels)}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-5 border-t border-white/10 p-6 lg:border-l lg:border-t-0">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-300">
+                        Avatar Cropper
+                      </p>
+                      <h3 className="mt-2 text-2xl font-semibold text-white">Frame your new profile image</h3>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={resetCropperState}
+                      className="rounded-full border border-white/15 bg-white/5 p-2 text-slate-200 transition hover:bg-white/10 hover:text-white"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+                    <p className="text-sm font-medium text-slate-100">{avatarFileName || 'Selected image'}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-400">
+                      Drag the photo to reposition it, then use zoom for a tighter crop. Saving will create a cropped <code className="font-semibold text-slate-200">File</code> object for the next backend step.
+                    </p>
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+                    <div className="flex items-center justify-between text-sm font-medium text-slate-200">
+                      <span>Zoom</span>
+                      <span>{avatarZoom.toFixed(1)}x</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={3}
+                      step={0.05}
+                      value={avatarZoom}
+                      onChange={(event) => setAvatarZoom(Number(event.target.value))}
+                      className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-white/15 accent-sky-400"
+                    />
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm leading-relaxed text-emerald-100">
+                    This phase is frontend-only. The cropped image will stay local in state until we wire the upload endpoint.
+                  </div>
+
+                  <div className="mt-auto flex flex-col gap-3 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={resetCropperState}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAvatarCropSave}
+                      disabled={isPreparingAvatar}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isPreparingAvatar ? 'Preparing...' : 'Save Crop'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 };

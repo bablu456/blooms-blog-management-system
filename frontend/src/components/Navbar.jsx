@@ -1,7 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { LayoutDashboard, Menu, PenSquare, UserRound, X } from 'lucide-react';
+import {
+  ChevronDown,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  PenSquare,
+  Settings,
+  X,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const navLinkClass = ({ isActive }) =>
@@ -11,12 +19,23 @@ const navLinkClass = ({ isActive }) =>
       : 'text-slate-600 hover:bg-white/70 hover:text-slate-900'
   }`;
 
+const getUserInitials = (currentUser) => {
+  const source = currentUser?.name?.trim() || currentUser?.username?.trim() || 'User';
+  return source
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join('')
+    .toUpperCase();
+};
+
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const userInitials = getUserInitials(currentUser);
 
   const links = useMemo(() => {
     if (!currentUser) {
@@ -26,17 +45,21 @@ const Navbar = () => {
       ];
     }
 
-    const items = [
-      { to: '/create-blog', label: 'Write', icon: PenSquare },
-      { to: '/profile', label: 'Profile', icon: UserRound },
-    ];
+    const items = [{ to: '/create-blog', label: 'Write', icon: PenSquare }];
 
     if (currentUser.role === 'ROLE_ADMIN') {
-      items.splice(1, 0, { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard });
+      items.push({ to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard });
     }
 
     return items;
   }, [currentUser]);
+
+  const closeMenu = () => setMenuOpen(false);
+
+  const handleLogout = async () => {
+    closeMenu();
+    await logout();
+  };
 
   return (
     <header className="sticky top-0 z-50 px-4 py-3 sm:px-6 lg:px-8">
@@ -60,31 +83,88 @@ const Navbar = () => {
             ))}
 
             {currentUser ? (
-              <>
-                <div className="ml-2 hidden items-center gap-2 rounded-xl border border-slate-200/75 bg-white/75 px-2 py-1.5 lg:flex">
-                  {currentUser.profileUrl ? (
-                    <img
-                      src={currentUser.profileUrl}
-                      alt={currentUser.name || 'User'}
-                      className="h-7 w-7 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-600">
-                      {(currentUser.name || 'U').slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
-                  <span className="max-w-[120px] truncate text-xs font-medium text-slate-700">
-                    {currentUser.name || 'User'}
-                  </span>
-                </div>
+              <div className="ml-2 flex items-center gap-3">
+                <div className="group relative">
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-3 rounded-full border border-slate-200/80 bg-white/78 px-2.5 py-1.5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:border-sky-200 hover:bg-white"
+                  >
+                    {currentUser.profileUrl ? (
+                      <img
+                        src={currentUser.profileUrl}
+                        alt={currentUser.name || 'User'}
+                        className="h-10 w-10 rounded-full object-cover ring-2 ring-white/90"
+                      />
+                    ) : (
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-cyan-500 text-xs font-bold text-white ring-2 ring-white/90">
+                        {userInitials}
+                      </span>
+                    )}
 
-                <button
-                  onClick={logout}
-                  className="ml-2 rounded-lg border border-rose-200/80 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
-                >
-                  Logout
-                </button>
-              </>
+                    <div className="hidden min-w-0 lg:block">
+                      <p className="max-w-[132px] truncate text-sm font-semibold text-slate-800">
+                        {currentUser.name || currentUser.username || 'User'}
+                      </p>
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Account</p>
+                    </div>
+
+                    <ChevronDown
+                      size={15}
+                      className="hidden text-slate-400 transition group-hover:text-slate-600 lg:block"
+                    />
+                  </Link>
+
+                  <div className="pointer-events-none absolute right-0 top-full z-20 pt-3 opacity-0 transition duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                    <div className="w-64 translate-y-2 rounded-[1.5rem] border border-white/70 bg-white/92 p-2 shadow-[0_24px_64px_rgba(15,23,42,0.16)] backdrop-blur-xl transition duration-200 group-hover:translate-y-0 group-focus-within:translate-y-0">
+                      <div className="flex items-center gap-3 rounded-[1.15rem] bg-slate-50/80 px-3 py-3">
+                        {currentUser.profileUrl ? (
+                          <img
+                            src={currentUser.profileUrl}
+                            alt={currentUser.name || 'User'}
+                            className="h-11 w-11 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-cyan-500 text-sm font-bold text-white">
+                            {userInitials}
+                          </span>
+                        )}
+
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            {currentUser.name || currentUser.username || 'User'}
+                          </p>
+                          <p className="truncate text-xs text-slate-500">@{currentUser.username || 'writer'}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 space-y-1">
+                        <Link
+                          to="/profile"
+                          className="flex items-center justify-between rounded-[1rem] px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700"
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            <Settings size={15} />
+                            Settings
+                          </span>
+                          <ChevronDown size={14} className="-rotate-90" />
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          className="flex w-full items-center justify-between rounded-[1rem] px-3 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            <LogOut size={15} />
+                            Logout
+                          </span>
+                          <ChevronDown size={14} className="-rotate-90" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : !isAuthPage ? (
               <Link
                 to="/register"
@@ -114,11 +194,38 @@ const Navbar = () => {
               transition={{ duration: 0.2 }}
               className="mt-3 space-y-1 border-t border-slate-200/75 pt-3 md:hidden"
             >
+              {currentUser ? (
+                <Link
+                  to="/profile"
+                  onClick={closeMenu}
+                  className="mb-2 flex items-center gap-3 rounded-2xl border border-slate-200/75 bg-white/80 px-3 py-3 shadow-[0_12px_28px_rgba(15,23,42,0.06)]"
+                >
+                  {currentUser.profileUrl ? (
+                    <img
+                      src={currentUser.profileUrl}
+                      alt={currentUser.name || 'User'}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-cyan-500 text-sm font-bold text-white">
+                      {userInitials}
+                    </span>
+                  )}
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">
+                      {currentUser.name || currentUser.username || 'User'}
+                    </p>
+                    <p className="text-xs text-slate-500">Open account settings</p>
+                  </div>
+                </Link>
+              ) : null}
+
               {links.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  onClick={() => setMenuOpen(false)}
+                  onClick={closeMenu}
                   className={({ isActive }) =>
                     `block rounded-lg px-3 py-2 text-sm font-medium transition ${
                       isActive
@@ -132,19 +239,27 @@ const Navbar = () => {
               ))}
 
               {currentUser ? (
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    logout();
-                  }}
-                  className="mt-1 w-full rounded-lg border border-rose-200/80 bg-rose-50 px-3 py-2 text-left text-sm font-medium text-rose-700"
-                >
-                  Logout
-                </button>
+                <>
+                  <Link
+                    to="/profile"
+                    onClick={closeMenu}
+                    className="mt-1 flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white/80 px-3 py-2 text-sm font-medium text-slate-700"
+                  >
+                    <Settings size={15} />
+                    Settings
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="mt-1 flex w-full items-center gap-2 rounded-lg border border-rose-200/80 bg-rose-50 px-3 py-2 text-left text-sm font-medium text-rose-700"
+                  >
+                    <LogOut size={15} />
+                    Logout
+                  </button>
+                </>
               ) : (
                 <Link
                   to="/register"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={closeMenu}
                   className="button-primary mt-1 block rounded-lg px-3 py-2 text-center text-sm font-semibold"
                 >
                   Get started
